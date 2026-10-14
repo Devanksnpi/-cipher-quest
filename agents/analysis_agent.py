@@ -22,6 +22,7 @@ from agents.common_algos import (
     caesar_brute_force,
     rail_fence_decrypt,
     base64_decode,
+    hex_decode,
     xor_decrypt,
     ENGLISH_FREQ,
 )
@@ -110,14 +111,17 @@ def tool_english_frequency_reference() -> str:
 @tool
 def tool_auto_crack(ciphertext: str) -> str:
     """
-    Attempt to automatically identify and decrypt ciphertext.
+    Attempt to automatically identify and decrypt ciphertext without a key.
 
-    Strategy:
-    1. Suggest the cipher type using heuristics.
-    2. For Base64 → decode immediately.
-    3. For monoalphabetic (high IC) → brute-force Caesar and score results.
-    4. For Rail Fence → try rails 2-8.
-    5. Otherwise → return frequency analysis + IC for manual investigation.
+    Strategy (in order):
+    1. Suggest cipher type via heuristics (Base64, Hex, IC analysis).
+    2. Base64  → decode immediately.
+    3. Hex (plain) → decode as hex bytes.
+    4. Monoalphabetic (high IC) → brute-force Caesar + chi-squared ranking.
+    5. Rail Fence → try rails 2-8.
+    6. Unknown → return frequency analysis + IC for manual investigation.
+
+    VISUAL CUES — use this when the cipher type is completely unknown.
 
     Args:
         ciphertext: The ciphertext to crack.
@@ -140,14 +144,22 @@ def tool_auto_crack(ciphertext: str) -> str:
         except ValueError as e:
             lines.append(f"Base64 decode failed: {e}")
 
-    # Step 3: Monoalphabetic — brute-force Caesar, score by English freq fit
+    # Step 3: Plain hex fast path
+    if suggestion == "Hex (plain)":
+        try:
+            decoded = hex_decode(ciphertext)
+            lines.append(f"\n✅ Hex decoded: {decoded}")
+            return '\n'.join(lines)
+        except ValueError as e:
+            lines.append(f"Hex decode failed: {e}")
+
+    # Step 4: Monoalphabetic — brute-force Caesar, score by chi-squared
     ic = index_of_coincidence(ciphertext)
     lines.append(f"Index of Coincidence: {ic:.6f}")
 
     if ic > 0.055:
         lines.append("\nBrute-forcing Caesar cipher (all 26 shifts):")
         candidates = caesar_brute_force(ciphertext)
-        # Score each candidate by chi-squared against English frequencies
         scored = []
         for c in candidates:
             freq = letter_frequency(c["plaintext"])
@@ -158,19 +170,18 @@ def tool_auto_crack(ciphertext: str) -> str:
             )
             scored.append((chi2, c["shift"], c["plaintext"]))
         scored.sort()
-        # Top 3 candidates
         for chi2, shift, plaintext in scored[:3]:
-            lines.append(f"  Shift {shift:2d} (score {chi2:.1f}): {plaintext}")
+            lines.append(f"  Shift {shift:2d} (χ²={chi2:.1f}): {plaintext}")
         lines.append(f"\n🏆 Best Caesar candidate: shift={scored[0][1]} → {scored[0][2]}")
 
-    # Step 4: Rail Fence attempts
+    # Step 5: Rail Fence attempts
     elif suggestion.startswith("Rail"):
         lines.append("\nTrying Rail Fence decryption (rails 2-8):")
         for r in range(2, 9):
             attempt = rail_fence_decrypt(ciphertext, r)
             lines.append(f"  Rails {r}: {attempt}")
 
-    # Step 5: Manual investigation fallback
+    # Step 6: Unknown — return stats for manual investigation
     else:
         freq = letter_frequency(ciphertext)
         top_letters = sorted(freq.items(), key=lambda x: -x[1])[:5]

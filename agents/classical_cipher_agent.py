@@ -48,7 +48,12 @@ def tool_caesar_encrypt(text: str, shift: int) -> str:
 @tool
 def tool_caesar_decrypt(text: str, shift: int) -> str:
     """
-    Decrypt text that was encrypted with the Caesar cipher.
+    Decrypt text encrypted with a Caesar cipher.
+
+    VISUAL CUES — use this when:
+    - Text is all letters (possibly with spaces/punctuation) but looks scrambled
+    - You already KNOW the shift value from context
+    - If you DON'T know the shift, use tool_caesar_brute_force instead
 
     Args:
         text: The ciphertext to decrypt.
@@ -64,6 +69,14 @@ def tool_caesar_decrypt(text: str, shift: int) -> str:
 def tool_caesar_brute_force(ciphertext: str) -> str:
     """
     Try all 26 Caesar shifts on ciphertext and return all candidates.
+
+    VISUAL CUES — use this when:
+    - Text looks like letter-substitution cipher but shift is UNKNOWN
+    - Text is only letters (A-Z), possibly with spaces
+    - Index of Coincidence is high (> 0.055) suggesting monoalphabetic substitution
+    - Example inputs: 'Uryyb Jbeyq', 'WKH TXLFN EURZQ IRA'
+
+    After getting results, pick the shift where the output reads as natural English.
 
     Args:
         ciphertext: The ciphertext to brute-force.
@@ -83,7 +96,13 @@ def tool_caesar_brute_force(ciphertext: str) -> str:
 @tool
 def tool_rot13(text: str) -> str:
     """
-    Apply ROT13 to text (self-inverse: encrypts and decrypts with the same call).
+    Apply ROT13 to text (self-inverse — same call encrypts and decrypts).
+
+    VISUAL CUES — use this when:
+    - The cipher is explicitly named ROT13
+    - Text looks like a Caesar cipher with shift 13
+    - Common giveaways: 'Uryyb' = 'Hello', 'Jbeyq' = 'World'
+    - ROT13 is Caesar shift 13; this is a fast-path alias for that specific case
 
     Args:
         text: The text to transform.

@@ -16,6 +16,7 @@ from strands import Agent, tool
 from agents.common_algos import (
     base64_encode,
     base64_decode,
+    hex_decode,
     xor_encrypt,
     xor_decrypt,
     rail_fence_encrypt,
@@ -46,6 +47,12 @@ def tool_base64_decode(encoded: str) -> str:
     """
     Decode a Base64-encoded string back to plaintext.
 
+    VISUAL CUES — use this tool when the text:
+    - Ends with '=' or '==' padding characters
+    - Contains only A-Z, a-z, 0-9, '+', '/' characters
+    - Has a length that is a multiple of 4
+    - Looks like: 'SGVsbG8gV29ybGQ=' or 'dGhpcyBpcyBhIHRlc3Q='
+
     Args:
         encoded: The Base64-encoded string (padding optional).
 
@@ -55,6 +62,29 @@ def tool_base64_decode(encoded: str) -> str:
     return base64_decode(encoded)
 
 
+@tool
+def tool_hex_decode(hex_str: str) -> str:
+    """
+    Decode a hexadecimal string to UTF-8 plaintext.
+
+    VISUAL CUES — use this tool when the text:
+    - Contains only hex characters: 0-9, a-f, A-F
+    - May start with '0x'
+    - May have bytes separated by spaces, colons, or dashes (e.g. '48 65 6c 6c 6f')
+    - Has an even number of hex characters (each byte = 2 hex chars)
+    - Looks like: '48656c6c6f' or '48 65 6c 6c 6f 20 57 6f 72 6c 64'
+    - NOTE: This is different from XOR — hex decode has NO key. XOR output
+      also looks like hex but requires a key to decrypt.
+
+    Args:
+        hex_str: The hex string to decode (with or without 0x prefix, spaces OK).
+
+    Returns:
+        The decoded UTF-8 string.
+    """
+    return hex_decode(hex_str)
+
+
 # ─────────────────────────────────────────────
 # XOR tools
 # ─────────────────────────────────────────────
@@ -62,16 +92,16 @@ def tool_base64_decode(encoded: str) -> str:
 @tool
 def tool_xor_encrypt(text: str, key: str) -> str:
     """
-    Encrypt text using XOR with the given key.
+    Encrypt text using XOR with the given key. Output is hex-encoded.
 
-    The output is hex-encoded. The key is repeated to match text length.
+    The key is repeated to match text length (Vernam-style).
 
     Args:
         text: The plaintext to encrypt.
         key: The XOR key string (non-empty).
 
     Returns:
-        Hex-encoded ciphertext.
+        Hex-encoded ciphertext (looks like '1a2b3c...').
     """
     return xor_encrypt(text, key)
 
@@ -81,8 +111,13 @@ def tool_xor_decrypt(hex_ciphertext: str, key: str) -> str:
     """
     Decrypt a hex-encoded XOR ciphertext using the given key.
 
+    VISUAL CUES — use this tool (not tool_hex_decode) when:
+    - You have BOTH a hex string AND a known key
+    - The problem explicitly mentions XOR encryption
+    - The hex string does not decode to readable text without a key
+
     Args:
-        hex_ciphertext: The hex-encoded ciphertext produced by XOR encryption.
+        hex_ciphertext: The hex-encoded ciphertext from XOR encryption.
         key: The XOR key string used during encryption.
 
     Returns:
@@ -151,6 +186,7 @@ def tool_rail_fence_brute_force(ciphertext: str, max_rails: int = 10) -> str:
 MODERN_TOOLS = [
     tool_base64_encode,
     tool_base64_decode,
+    tool_hex_decode,
     tool_xor_encrypt,
     tool_xor_decrypt,
     tool_rail_fence_encrypt,

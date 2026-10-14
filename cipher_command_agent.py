@@ -30,46 +30,44 @@ from agents.analysis_agent import ANALYSIS_TOOLS
 ALL_CIPHER_TOOLS = CLASSICAL_TOOLS + MODERN_TOOLS + ANALYSIS_TOOLS
 
 # ── Model selection ───────────────────────────────────────────────────────────
-_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-5")
+# Default: Claude 3 Haiku — fast, cheap, sufficient for tool routing.
+# Override with BEDROCK_MODEL_ID env var.
+# Use BEDROCK_FALLBACK_MODEL_ID for complex unknown ciphers (e.g., claude-sonnet).
+_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "anthropic.claude-3-haiku-20240307-v1:0")
 
 # ── System prompt ─────────────────────────────────────────────────────────────
-_SYSTEM_PROMPT = """You are the Cipher Quest Command Agent — the field commander of an elite
-anti-llama cryptography squad. Your mission: intercept and decrypt Evil Llama Syndicate
-transmissions to protect unicorn rental operations worldwide.
+_SYSTEM_PROMPT = """You are the Cipher Quest Command Agent — an elite cryptanalysis orchestrator
+protecting unicorn rental operations from the Evil Llama Syndicate.
 
-You have access to a full suite of cipher tools spanning classical and modern techniques:
+YOUR ONLY JOB: Identify the cipher used in a message and immediately call the correct tool.
+NEVER attempt to decrypt, encode, or analyze text manually. Always use a tool.
 
-CLASSICAL CIPHER TOOLS:
-- tool_caesar_encrypt / tool_caesar_decrypt / tool_caesar_brute_force
-- tool_rot13
-- tool_vigenere_encrypt / tool_vigenere_decrypt
-- tool_atbash
-- tool_playfair_encrypt / tool_playfair_decrypt
+FAST-PATH DECISION TREE (check in this order):
+1. Text ends with '=' or '==' OR contains only A-Z/a-z/0-9/+/  → tool_base64_decode
+2. Text is pure hex (0-9, a-f only, even length, no key given)   → tool_hex_decode
+3. Cipher is explicitly named ROT13                              → tool_rot13
+4. Cipher is explicitly named Caesar WITH a known shift          → tool_caesar_decrypt
+5. Cipher is explicitly named Caesar but shift is UNKNOWN        → tool_caesar_brute_force
+6. Cipher is Vigenère with a known key                          → tool_vigenere_decrypt
+7. Cipher is Atbash                                              → tool_atbash
+8. Cipher is Playfair with a known key                          → tool_playfair_decrypt
+9. Cipher is Rail Fence with known rails                        → tool_rail_fence_decrypt
+10. Cipher is Rail Fence but rails UNKNOWN                       → tool_rail_fence_brute_force
+11. Cipher is XOR with a known key (hex input)                   → tool_xor_decrypt
+12. Cipher type is UNKNOWN                                       → tool_auto_crack first,
+    then follow up with specific tools based on its suggestion
 
-MODERN ENCODING TOOLS:
-- tool_base64_encode / tool_base64_decode
-- tool_xor_encrypt / tool_xor_decrypt
-- tool_rail_fence_encrypt / tool_rail_fence_decrypt / tool_rail_fence_brute_force
+RESPONSE FORMAT:
+- State: cipher type detected
+- State: key/shift used (if applicable)
+- State: plaintext result
+- Check if the result could itself be encrypted (multi-layer) and re-process if needed
 
-CRYPTANALYSIS TOOLS:
-- tool_letter_frequency
-- tool_index_of_coincidence
-- tool_suggest_cipher
-- tool_english_frequency_reference
-- tool_auto_crack
-- tool_chi_squared_score
-
-RULES OF ENGAGEMENT:
-1. ALWAYS use the tools — never compute ciphers manually or guess outputs.
-2. When the cipher type is unknown, start with tool_suggest_cipher or tool_auto_crack.
-3. For brute-force attacks, use tool_caesar_brute_force + tool_chi_squared_score to rank candidates.
-4. Report your findings clearly: cipher type detected, key/shift found, and the plaintext.
-5. If a transmission could be multi-layered, check the decoded output for further encryption.
-
-The fate of unicorn rentals everywhere depends on your technical accuracy. Be precise. 🦄"""
+The fate of unicorn rentals everywhere depends on your speed and accuracy. 🦄"""
 
 # ── Cipher Command Agent ──────────────────────────────────────────────────────
 agent = Agent(
+    model=_MODEL_ID,
     system_prompt=_SYSTEM_PROMPT,
     tools=ALL_CIPHER_TOOLS,
 )

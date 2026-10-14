@@ -134,6 +134,32 @@ def base64_decode(encoded: str) -> str:
 
 
 # ─────────────────────────────────────────────
+# Hexadecimal decode
+# ─────────────────────────────────────────────
+
+def hex_decode(hex_str: str) -> str:
+    """
+    Decode a hexadecimal string to UTF-8 text.
+
+    Accepts strings with or without '0x' prefix and with optional spaces
+    between byte pairs (e.g. '48 65 6c 6c 6f').
+
+    Raises ValueError on malformed input.
+    """
+    cleaned = hex_str.strip().lower()
+    if cleaned.startswith('0x'):
+        cleaned = cleaned[2:]
+    # Remove spaces/colons (common hex dump separators)
+    cleaned = cleaned.replace(' ', '').replace(':', '').replace('-', '')
+    if not cleaned:
+        raise ValueError("Empty hex string after cleaning.")
+    try:
+        return bytes.fromhex(cleaned).decode('utf-8')
+    except ValueError as exc:
+        raise ValueError(f"Invalid hex string: {exc}") from exc
+
+
+# ─────────────────────────────────────────────
 # XOR Cipher
 # ─────────────────────────────────────────────
 
@@ -346,27 +372,36 @@ def suggest_cipher(text: str) -> str:
     Heuristic guess at what cipher might have been used, based on IC and character set.
     Returns a string hint.
     """
-    # Check Base64
     import re
     stripped = text.strip().rstrip('=')
-    if re.fullmatch(r'[A-Za-z0-9+/]+', stripped) and len(text) % 4 in (0, 2, 3):
+
+    # Check Base64 (ends with = or ==, only base64 alphabet)
+    if re.fullmatch(r'[A-Za-z0-9+/]+={0,2}', text.strip()):
         try:
-            decoded = base64.b64decode(text + '==').decode('utf-8')
-            if decoded.isprintable():
+            decoded = base64.b64decode(text.strip() + '==').decode('utf-8')
+            if decoded.isprintable() and len(decoded) > 0:
                 return "Base64"
         except Exception:
             pass
 
-    # Check hex (XOR output)
-    if re.fullmatch(r'[0-9a-fA-F]+', text) and len(text) % 2 == 0:
-        return "XOR (hex-encoded)"
+    # Check plain hex (no key needed — just hex bytes encoding ASCII)
+    clean_hex = text.strip().replace(' ', '').replace(':', '').replace('-', '')
+    if re.fullmatch(r'[0-9a-fA-F]+', clean_hex) and len(clean_hex) % 2 == 0:
+        try:
+            decoded = bytes.fromhex(clean_hex).decode('utf-8')
+            if decoded.isprintable():
+                return "Hex (plain)"
+        except Exception:
+            pass
+        # If it doesn't decode to printable text, likely XOR output
+        return "XOR (hex-encoded, needs key)"
 
-    # IC-based
-    ic = index_of_coincidence(text)
+    # IC-based letter analysis
     letters_only = ''.join(ch for ch in text if ch.isalpha())
     if len(letters_only) == 0:
         return "Unknown"
 
+    ic = index_of_coincidence(text)
     if ic > 0.060:
         return "Caesar or Atbash (monoalphabetic substitution)"
     elif ic > 0.045:
