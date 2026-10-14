@@ -15,6 +15,7 @@ import json
 sys.path.insert(0, os.path.dirname(__file__))
 
 from strands import Agent, tool
+from strands.models import BedrockModel
 from agents.common_algos import (
     letter_frequency,
     index_of_coincidence,
@@ -228,6 +229,7 @@ ANALYSIS_TOOLS = [
 ]
 
 analysis_agent = Agent(
+    model=BedrockModel(model_id="anthropic.claude-3-haiku-20240307-v1:0"),
     system_prompt=(
         "You are the Cryptanalysis Intelligence Officer — an expert at breaking unknown "
         "ciphers through statistical analysis. You use frequency analysis, Index of "

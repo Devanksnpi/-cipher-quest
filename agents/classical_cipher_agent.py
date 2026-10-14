@@ -13,6 +13,7 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 
 from strands import Agent, tool
+from strands.models import BedrockModel
 from agents.common_algos import (
     caesar_encrypt,
     caesar_decrypt,
@@ -216,6 +217,7 @@ CLASSICAL_TOOLS = [
 ]
 
 classical_cipher_agent = Agent(
+    model=BedrockModel(model_id="anthropic.claude-3-haiku-20240307-v1:0"),
     system_prompt=(
         "You are the Classical Cipher Specialist — an expert in historical encryption "
         "techniques. You handle Caesar, ROT13, Vigenère, Atbash, and Playfair ciphers. "

@@ -13,6 +13,7 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 
 from strands import Agent, tool
+from strands.models import BedrockModel
 from agents.common_algos import (
     base64_encode,
     base64_decode,
@@ -195,6 +196,7 @@ MODERN_TOOLS = [
 ]
 
 modern_cipher_agent = Agent(
+    model=BedrockModel(model_id="anthropic.claude-3-haiku-20240307-v1:0"),
     system_prompt=(
         "You are the Modern Encoding Specialist — an expert in contemporary cipher "
         "and encoding techniques. You handle Base64 encoding/decoding, XOR encryption, "

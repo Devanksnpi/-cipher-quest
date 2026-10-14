@@ -20,6 +20,7 @@ Usage:
 import os
 
 from strands import Agent
+from strands.models import BedrockModel
 
 # ── Import all specialist tool lists ──────────────────────────────────────────
 from agents.classical_cipher_agent import CLASSICAL_TOOLS
@@ -66,8 +67,13 @@ RESPONSE FORMAT:
 The fate of unicorn rentals everywhere depends on your speed and accuracy. 🦄"""
 
 # ── Cipher Command Agent ──────────────────────────────────────────────────────
+_bedrock_model = BedrockModel(
+    model_id=_MODEL_ID,
+    region_name=os.environ.get("AWS_REGION", "us-east-1"),
+)
+
 agent = Agent(
-    model=_MODEL_ID,
+    model=_bedrock_model,
     system_prompt=_SYSTEM_PROMPT,
     tools=ALL_CIPHER_TOOLS,
 )
