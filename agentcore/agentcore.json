@@ -1,0 +1,13 @@
+{
+  "name": "cipher_quest_agent",
+  "description": "Elite anti-llama cryptography squad — decrypts Evil Llama Syndicate transmissions using specialized cipher agents",
+  "entrypoint": "lambda_handler.handler",
+  "runtime": "python3.12",
+  "memory": 512,
+  "timeout": 300,
+  "requirements": "requirements.txt",
+  "environment": {
+    "BEDROCK_MODEL_ID": "us.anthropic.claude-sonnet-4-5",
+    "AWS_REGION": "us-east-1"
+  }
+}
