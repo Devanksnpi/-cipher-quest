@@ -1,14 +1,30 @@
 {
-  "name": "cipher_quest_agent",
-  "description": "Elite anti-llama cryptography squad — decrypts Evil Llama Syndicate transmissions using specialized cipher agents",
-  "entrypoint": "lambda_handler.handler",
-  "runtime": "python3.12",
-  "memory": 512,
-  "timeout": 300,
-  "requirements": "requirements.txt",
-  "environment": {
-    "BEDROCK_MODEL_ID": "anthropic.claude-3-haiku-20240307-v1:0",
-    "BEDROCK_FALLBACK_MODEL_ID": "us.anthropic.claude-sonnet-4-5",
-    "AWS_REGION": "us-east-1"
-  }
+  "name": "CipherQuest",
+  "version": 1,
+  "tags": {
+    "agentcore:created-by": "agentcore-cli",
+    "agentcore:project-name": "CipherQuest"
+  },
+  "runtimes": [
+    {
+      "name": "cipher_quest_agent",
+      "build": "CodeZip",
+      "entrypoint": "lambda_handler.py",
+      "codeLocation": "./",
+      "runtimeVersion": "PYTHON_3_12",
+      "networkMode": "PUBLIC",
+      "protocol": "HTTP",
+      "envVars": [
+        { "name": "BEDROCK_MODEL_ID", "value": "anthropic.claude-3-haiku-20240307-v1:0" },
+        { "name": "BEDROCK_FALLBACK_MODEL_ID", "value": "us.anthropic.claude-sonnet-4-5" },
+        { "name": "AWS_REGION", "value": "us-east-1" }
+      ]
+    }
+  ],
+  "memories": [],
+  "credentials": [],
+  "evaluators": [],
+  "onlineEvalConfigs": [],
+  "agentCoreGateways": [],
+  "policyEngines": []
 }
